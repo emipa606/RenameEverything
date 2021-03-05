@@ -1,35 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Reflection;
-using System.Reflection.Emit;
-using UnityEngine;
+using HarmonyLib;
 using Verse;
-using RimWorld;
-using Harmony;
 
 namespace RenameEverything
 {
-
     [StaticConstructorOnStartup]
     public static class ReflectedMethods
     {
+        public delegate V FuncOut<T, U, V>(T input, out U output);
+
+        public static FuncOut<Pawn_EquipmentTracker, ThingWithComps, bool> TryGetOffHandEquipment;
 
         static ReflectedMethods()
         {
             // Convert DualWield.Ext_Pawn_EquipmentTracker.TryGetOffHandEquipment to a delegate
             if (ModCompatibilityCheck.DualWield)
             {
-                TryGetOffHandEquipment = (FuncOut<Pawn_EquipmentTracker, ThingWithComps, bool>)Delegate.CreateDelegate(typeof(FuncOut<Pawn_EquipmentTracker, ThingWithComps, bool>),
-                    AccessTools.Method(GenTypes.GetTypeInAnyAssemblyNew("DualWield.Ext_Pawn_EquipmentTracker", "DualWield"), "TryGetOffHandEquipment"));
+                TryGetOffHandEquipment = (FuncOut<Pawn_EquipmentTracker, ThingWithComps, bool>) Delegate.CreateDelegate(
+                    typeof(FuncOut<Pawn_EquipmentTracker, ThingWithComps, bool>),
+                    AccessTools.Method(
+                        GenTypes.GetTypeInAnyAssembly("DualWield.Ext_Pawn_EquipmentTracker", "DualWield"),
+                        "TryGetOffHandEquipment"));
             }
         }
-
-        public static FuncOut<Pawn_EquipmentTracker, ThingWithComps, bool> TryGetOffHandEquipment;
-
-        public delegate V FuncOut<T, U, V>(T input, out U output);
-
     }
-
 }

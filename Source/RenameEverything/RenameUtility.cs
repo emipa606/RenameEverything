@@ -1,40 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
+using ColourPicker;
+using HarmonyLib;
+using Multiplayer.API;
+using RimWorld;
 using UnityEngine;
 using Verse;
-using RimWorld;
-using Harmony;
-using ColourPicker;
-using Multiplayer.API;
 
 namespace RenameEverything
 {
-
     public static class RenameUtility
     {
-
         private const int MaxTextWidth = 65;
 
         private static Color cachedGUIColour;
 
+        public static MethodInfo ChangeGUIColourPreLabelDraw_IEnumerableThing_Info => AccessTools.Method(
+            typeof(RenameUtility), nameof(ChangeGUIColourPreLabelDraw), new[] {typeof(IEnumerable<Thing>)});
+
+        public static MethodInfo ChangeGUIColourPreLabelDraw_Thing_Info => AccessTools.Method(typeof(RenameUtility),
+            nameof(ChangeGUIColourPreLabelDraw), new[] {typeof(Thing)});
+
+        public static MethodInfo ChangeGUIColourPostLabelDraw_Info =>
+            AccessTools.Method(typeof(RenameUtility), nameof(ChangeGUIColourPostLabelDraw));
+
         public static IEnumerable<Gizmo> GetRenamableCompGizmos(CompRenamable renamableComp)
         {
-            string filler = renamableComp.Props.inspectStringTranslationKey.Translate().UncapitalizeFirst();
+            var filler = renamableComp.Props.inspectStringTranslationKey.TranslateSimple().UncapitalizeFirst();
             // Rename
-            yield return new Command_Rename()
+            yield return new Command_Rename
             {
                 renamable = renamableComp,
                 defaultLabel = renamableComp.Props.renameTranslationKey.Translate(),
                 defaultDesc = "RenameEverything.RenameGizmo_Description".Translate(filler),
                 icon = TexButton.RenameTex,
-                hotKey = KeyBindingDefOf.Misc1,
+                hotKey = KeyBindingDefOf.Misc1
             };
 
             // Recolour label
-            yield return new Command_RecolourLabel()
+            yield return new Command_RecolourLabel
             {
                 renamable = renamableComp,
                 defaultLabel = "RenameEverything.RecolourLabel".Translate(),
@@ -42,28 +47,34 @@ namespace RenameEverything
                 icon = TexButton.RecolourTex
             };
 
-            if (renamableComp.Named || renamableComp.Coloured)
+            if (!renamableComp.Named && !renamableComp.Coloured)
             {
-                // Allow merging
-                if (renamableComp.parent.def.stackLimit > 1)
-                    yield return new Command_Toggle()
-                    {
-                        defaultLabel = "RenameEverything.AllowMerging".Translate(),
-                        defaultDesc = "RenameEverything.AllowMerging_Description".Translate(),
-                        icon = TexButton.AllowMergingTex,
-                        isActive = () => renamableComp.allowMerge,
-                        toggleAction = () => AllowMergeGizmoToggleAction(renamableComp),
-                    };
+                yield break;
+            }
 
-                // Remove name
-                if (renamableComp.Named)
-                    yield return new Command_Action()
-                    {
-                        defaultLabel = "RenameEverything.RemoveName".Translate(),
-                        defaultDesc = "RenameEverything.RemoveName_Description".Translate(filler),
-                        icon = TexButton.DeleteX,
-                        action = () => RemoveNameGizmoAction(renamableComp),
-                    };
+            // Allow merging
+            if (renamableComp.parent.def.stackLimit > 1)
+            {
+                yield return new Command_Toggle
+                {
+                    defaultLabel = "RenameEverything.AllowMerging".Translate(),
+                    defaultDesc = "RenameEverything.AllowMerging_Description".Translate(),
+                    icon = TexButton.AllowMergingTex,
+                    isActive = () => renamableComp.allowMerge,
+                    toggleAction = () => AllowMergeGizmoToggleAction(renamableComp)
+                };
+            }
+
+            // Remove name
+            if (renamableComp.Named)
+            {
+                yield return new Command_Action
+                {
+                    defaultLabel = "RenameEverything.RemoveName".Translate(),
+                    defaultDesc = "RenameEverything.RemoveName_Description".Translate(filler),
+                    icon = TexButton.DeleteX,
+                    action = () => RemoveNameGizmoAction(renamableComp)
+                };
             }
         }
 
@@ -78,31 +89,49 @@ namespace RenameEverything
         {
             renamableComp.Named = false;
         }
-        
+
         public static IEnumerable<CompRenamable> GetRenamableEquipmentComps(Pawn pawn)
         {
             // Equipment
             if (pawn.equipment != null)
+            {
                 foreach (var eq in pawn.equipment.AllEquipmentListForReading)
+                {
                     if (eq.GetComp<CompRenamable>() is CompRenamable renamableComp)
+                    {
                         yield return renamableComp;
+                    }
+                }
+            }
 
             // Apparel
-            if (pawn.apparel != null)
+            if (pawn.apparel == null)
+            {
+                yield break;
+            }
+
+            {
                 foreach (var ap in pawn.apparel.WornApparel)
+                {
                     if (ap.GetComp<CompRenamable>() is CompRenamable renamableComp)
+                    {
                         yield return renamableComp;
+                    }
+                }
+            }
         }
 
         public static void ChangeGUIColourPreLabelDraw(IEnumerable<Thing> things)
         {
             if (things.Count() == 1)
+            {
                 ChangeGUIColourPreLabelDraw(things.First());
+            }
             else
+            {
                 cachedGUIColour = GUI.color;
+            }
         }
-
-        public static MethodInfo ChangeGUIColourPreLabelDraw_IEnumerableThing_Info => AccessTools.Method(typeof(RenameUtility), nameof(ChangeGUIColourPreLabelDraw), new Type[] { typeof(IEnumerable<Thing>) });
 
         public static void ChangeGUIColourPreLabelDraw(Thing thing)
         {
@@ -114,65 +143,70 @@ namespace RenameEverything
             }
         }
 
-        public static MethodInfo ChangeGUIColourPreLabelDraw_Thing_Info => AccessTools.Method(typeof(RenameUtility), nameof(ChangeGUIColourPreLabelDraw), new Type[] { typeof(Thing) });
-
         public static void ChangeGUIColourPostLabelDraw()
         {
             // After the label has been drawn, change the labelColour back to the previous one
             GUI.color = cachedGUIColour;
         }
 
-        public static MethodInfo ChangeGUIColourPostLabelDraw_Info => AccessTools.Method(typeof(RenameUtility), nameof(ChangeGUIColourPostLabelDraw));
-
         public static IEnumerable<FloatMenuOption> CaravanRenameThingButtonFloatMenuOptions(CompRenamable renamableComp)
         {
             // Rename
-            yield return new FloatMenuOption(renamableComp.Props.renameTranslationKey.Translate(), () => Find.WindowStack.Add(new Dialog_RenameThings(renamableComp)));
+            yield return new FloatMenuOption(renamableComp.Props.renameTranslationKey.Translate(),
+                () => Find.WindowStack.Add(new Dialog_RenameThings(renamableComp)));
 
             // Recolour
-            yield return new FloatMenuOption("RenameEverything.RecolourLabel".Translate(), () => Find.WindowStack.Add(new Dialog_ColourPicker(renamableComp.labelColour, c => renamableComp.labelColour = c)));
+            yield return new FloatMenuOption("RenameEverything.RecolourLabel".Translate(),
+                () => Find.WindowStack.Add(new Dialog_ColourPicker(renamableComp.labelColour,
+                    c => renamableComp.labelColour = c)));
 
             // Remove name
             if (renamableComp.Named)
-                yield return new FloatMenuOption("RenameEverything.RemoveName".Translate(), () => renamableComp.Named = false);
+            {
+                yield return new FloatMenuOption("RenameEverything.RemoveName".Translate(),
+                    () => renamableComp.Named = false);
+            }
         }
 
         public static void DrawThingName(Thing thing)
         {
-            if (CanDrawThingName(thing, out CompRenamable renamableComp))
+            if (!CanDrawThingName(thing, out var renamableComp))
             {
-                // Do background
-                Text.Font = GameFont.Tiny;
-                var screenPos = GenMapUI.LabelDrawPosFor(thing, -0.4f);
-                string text = Text.CalcSize(renamableComp.Name).x <= MaxTextWidth ? renamableComp.Name : renamableComp.Name.Shorten().Truncate(MaxTextWidth);
-                float x = Text.CalcSize(text).x;
-                var backgroundRect = new Rect(screenPos.x - x / 2 - 4, screenPos.y, x + 8, 12);
-                GUI.DrawTexture(backgroundRect, TexUI.GrayTextBG);
-
-                // Do label
-                Text.Anchor = TextAnchor.UpperCenter;
-                ChangeGUIColourPreLabelDraw(thing);
-                var textRect = new Rect(screenPos.x - x / 2, screenPos.y - 3, x, 999);
-                Widgets.Label(textRect, text);
-                ChangeGUIColourPostLabelDraw();
-
-                // Finish off
-                Text.Anchor = TextAnchor.UpperLeft;
-                Text.Font = GameFont.Small;
+                return;
             }
+
+            // Do background
+            Text.Font = GameFont.Tiny;
+            var screenPos = GenMapUI.LabelDrawPosFor(thing, -0.4f);
+            var text = Text.CalcSize(renamableComp.Name).x <= MaxTextWidth
+                ? renamableComp.Name
+                : renamableComp.Name.Shorten().Truncate(MaxTextWidth);
+            var x = Text.CalcSize(text).x;
+            var backgroundRect = new Rect(screenPos.x - (x / 2) - 4, screenPos.y, x + 8, 12);
+            GUI.DrawTexture(backgroundRect, TexUI.GrayTextBG);
+
+            // Do label
+            Text.Anchor = TextAnchor.UpperCenter;
+            ChangeGUIColourPreLabelDraw(thing);
+            var textRect = new Rect(screenPos.x - (x / 2), screenPos.y - 3, x, 999);
+            Widgets.Label(textRect, text);
+            ChangeGUIColourPostLabelDraw();
+
+            // Finish off
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
         }
 
-        public static bool CanDrawThingName(Thing t, out CompRenamable renamableComp)
+        private static bool CanDrawThingName(Thing t, out CompRenamable renamableComp)
         {
             renamableComp = t.TryGetComp<CompRenamable>();
-            return renamableComp != null && renamableComp.Named && RenameEverythingSettings.showNameOnGround && !typeof(Building).IsAssignableFrom(t.GetType());
+            return renamableComp != null && renamableComp.Named && RenameEverythingSettings.showNameOnGround &&
+                   !(t is Building);
         }
 
         public static bool CanDrawThingName(Thing t)
         {
-            return CanDrawThingName(t, out CompRenamable c);
+            return CanDrawThingName(t, out _);
         }
-
     }
-
 }

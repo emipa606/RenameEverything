@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using Verse;
-using RimWorld;
+﻿using System.Collections.Generic;
 using Multiplayer.API;
+using Verse;
 
 namespace RenameEverything
 {
-
     public class Dialog_RenameThings : Dialog_Rename
     {
+        private readonly List<CompRenamable> renamableComps;
 
         public Dialog_RenameThings(List<CompRenamable> renamableComps)
         {
@@ -20,18 +15,17 @@ namespace RenameEverything
             if (renamableComps.Count == 1)
             {
                 var renamable = renamableComps[0];
-                if (renamable.Named)
-                    curName = renamable.Name;
-                else
-                    curName = renamable.parent.LabelCapNoCount;
+                curName = renamable.Named ? renamable.Name : renamable.parent.LabelCapNoCount;
             }
             else
-                curName = String.Empty;
+            {
+                curName = string.Empty;
+            }
         }
 
         public Dialog_RenameThings(CompRenamable renamableComp)
         {
-            renamableComps = new List<CompRenamable>() { renamableComp };
+            renamableComps = new List<CompRenamable> {renamableComp};
             curName = renamableComp.Named ? renamableComp.Name : renamableComp.parent.LabelCapNoCount;
         }
 
@@ -44,11 +38,9 @@ namespace RenameEverything
         protected override void SetName(string name)
         {
             foreach (var renamableComp in renamableComps)
+            {
                 renamableComp.Name = name;
+            }
         }
-
-        private List<CompRenamable> renamableComps = new List<CompRenamable>();
-
     }
-
 }

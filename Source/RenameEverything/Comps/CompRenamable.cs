@@ -1,23 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Verse;
-using RimWorld;
 
 namespace RenameEverything
 {
-
     public class CompRenamable : ThingComp
     {
+        private string _name = string.Empty;
+        public bool allowMerge;
 
-        private string cachedLabel = String.Empty;
-        private string _name = String.Empty;
+        private string cachedLabel = string.Empty;
         public Color labelColour = Color.white;
-        public bool allowMerge = false;
 
-        public CompProperties_Renamable Props => (CompProperties_Renamable)props;
+        public CompProperties_Renamable Props => (CompProperties_Renamable) props;
 
         public bool Named
         {
@@ -25,13 +20,15 @@ namespace RenameEverything
             set
             {
                 if (!value)
-                    _name = String.Empty;
+                {
+                    _name = string.Empty;
+                }
             }
         }
 
         public string Name
         {
-            get => Named ? _name : String.Empty;
+            get => Named ? _name : string.Empty;
             set => _name = value;
         }
 
@@ -41,35 +38,50 @@ namespace RenameEverything
             set
             {
                 if (!value)
+                {
                     labelColour = Color.white;
+                }
             }
         }
 
         public override bool Equals(object obj)
         {
             if (obj is CompRenamable otherRenamable)
-                return Name.Equals(otherRenamable.Name) && labelColour.IndistinguishableFrom(otherRenamable.labelColour);
+            {
+                return Name.Equals(otherRenamable.Name) &&
+                       labelColour.IndistinguishableFrom(otherRenamable.labelColour);
+            }
+
             return false;
         }
 
-        public override int GetHashCode() => Name.GetHashCode();
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
 
         public override bool AllowStackWith(Thing other)
         {
             if (!base.AllowStackWith(other))
+            {
                 return false;
+            }
+
             return allowMerge || Equals(other.TryGetComp<CompRenamable>());
         }
 
         public override string TransformLabel(string label)
         {
             cachedLabel = label;
-            if (Named)
+            if (!Named)
             {
-                bool shouldAppendCachedLabel = RenameEverythingSettings.appendCachedLabel && (!RenameEverythingSettings.onlyAppendInThingHolder || ThingOwnerUtility.GetFirstSpawnedParentThing(parent) != parent);
-                return Name + (shouldAppendCachedLabel ? $" ({cachedLabel.CapitalizeFirst()})" : String.Empty);
+                return label;
             }
-            return label;
+
+            var shouldAppendCachedLabel = RenameEverythingSettings.appendCachedLabel &&
+                                          (!RenameEverythingSettings.onlyAppendInThingHolder ||
+                                           ThingOwnerUtility.GetFirstSpawnedParentThing(parent) != parent);
+            return Name + (shouldAppendCachedLabel ? $" ({cachedLabel.CapitalizeFirst()})" : string.Empty);
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -97,10 +109,10 @@ namespace RenameEverything
 
         public override void PostExposeData()
         {
-            Scribe_Values.Look(ref cachedLabel, "cachedLabel", String.Empty);
-            Scribe_Values.Look(ref _name, "name", String.Empty);
+            Scribe_Values.Look(ref cachedLabel, "cachedLabel", string.Empty);
+            Scribe_Values.Look(ref _name, "name", string.Empty);
             Scribe_Values.Look(ref labelColour, "labelColour", Color.white);
-            Scribe_Values.Look(ref allowMerge, "allowMerge", false);
+            Scribe_Values.Look(ref allowMerge, "allowMerge");
 
             base.PostExposeData();
         }
@@ -109,7 +121,5 @@ namespace RenameEverything
         {
             return Named ? $"{Props.inspectStringTranslationKey.Translate()}: {cachedLabel.CapitalizeFirst()}" : null;
         }
-
     }
-
 }

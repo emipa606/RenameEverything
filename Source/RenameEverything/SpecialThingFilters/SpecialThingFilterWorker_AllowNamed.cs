@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using Verse;
-using RimWorld;
+﻿using Verse;
 
 namespace RenameEverything
 {
-
     public class SpecialThingFilterWorker_AllowNamed : SpecialThingFilterWorker
     {
-
         public override bool Matches(Thing t)
         {
             return CanEverMatch(t.def) && t.TryGetComp<CompRenamable>().Named;
@@ -21,7 +13,5 @@ namespace RenameEverything
         {
             return def.HasComp(typeof(CompRenamable));
         }
-
     }
-
 }

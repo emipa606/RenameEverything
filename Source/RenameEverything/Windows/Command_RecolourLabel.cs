@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using Verse;
-using RimWorld;
+﻿using System.Collections.Generic;
 using ColourPicker;
 using Multiplayer.API;
+using UnityEngine;
+using Verse;
 
 namespace RenameEverything
 {
-
     public class Command_RecolourLabel : Command_Renamable
     {
-
         public override void ProcessInput(Event ev)
         {
             base.ProcessInput(ev);
@@ -25,7 +19,5 @@ namespace RenameEverything
         {
             renamableCompList.ForEach(r => r.labelColour = c);
         }
-
     }
-
 }
